@@ -1,19 +1,14 @@
 // create an empty modbus client
 let ModbusRTU = require("modbus-serial");
 let modbusMaster = new ModbusRTU();
-const MongoClient = require('./mongo');
 let TcpClient = require("./tcp_client");
-
-let mongo = new MongoClient();
 
 let tcp = new TcpClient();
 
-mongo.connect(() => {
-    tcp.connect((address) => {
-        console.log("Connected:", address);
-        tcp.send_auth();
-    });
-})
+tcp.connect((address) => {
+    console.log("Connected:", address);
+    tcp.send_auth();
+});
 
 
 // open modbus connection to a tcp line

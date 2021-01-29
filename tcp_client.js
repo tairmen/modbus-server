@@ -1,9 +1,12 @@
 const config = require('config');
 const net = require('net');
+const MongoClient = require('./mongo');
 const port = config.get('node.port');
 const host = config.get('node.host');
 const hub_code = config.get('node.code');
 const hub_secret = config.get('node.secret');
+
+let mongo = new MongoClient();
 
 module.exports = class TcpClient {
     constructor() {
@@ -12,26 +15,29 @@ module.exports = class TcpClient {
     }
     connect(callback = () => {}) {
         let me = this;
-        me.client.connect(port, host, function () {
-            me.address = me.client.address().address + ":" + me.client.address().port;
-            callback(me.address);
-            me.client.on('data', function (data) {
-                try {
-                    let json_data = JSON.parse(data);
-                    if (json_data.token) {
-                        me.token = json_data.token;
-                        me.send_request("config");
-                    } else if (json_data.config) {
-                        console.log(json_data.config);
+        mongo.connect(() => {
+            me.client.connect(port, host, function () {
+                me.address = me.client.address().address + ":" + me.client.address().port;
+                callback(me.address);
+                me.client.on('data', function (data) {
+                    try {
+                        let json_data = JSON.parse(data);
+                        if (json_data.token) {
+                            me.token = json_data.token;
+                            me.send_request("config");
+                        } else if (json_data.config) {
+                            console.log(json_data.config);
+                            mongo.update_devices(json_data.config.devices);
+                        }
+                    } catch (e) {
+                        console.log(e)
                     }
-                } catch (e) {
-                    console.log(e)
-                }
-
-
-            });
-            me.client.on('close', function () {
-                console.log("Disconnected: ", me.address);
+    
+    
+                });
+                me.client.on('close', function () {
+                    console.log("Disconnected: ", me.address);
+                });
             });
         });
     }
