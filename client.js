@@ -9,6 +9,8 @@ let mongo = new MongoClient();
 
 let tcp = new TcpClient(mongo);
 
+let registers, send_interv;
+
 let conncted_to_db = setInterval(() => {
     if (mongo.loaded()) {
         clearInterval(conncted_to_db);
@@ -21,13 +23,12 @@ let conncted_to_db = setInterval(() => {
 }, 100);
 
 function run() {
-    let interv = setInterval(() => {
+    setInterval(() => {
         if (tcp.config_enable()) {
-            clearInterval(interv);
             run_get_data_interval();
             run_send_data_interval();
         }
-    }, 100)
+    }, 200)
 }
 
 function run_get_data_interval() {
@@ -47,11 +48,16 @@ function run_get_data_interval() {
             })
         }
     })
-    let registers = new Registers(all_regs, time_poll);
+    registers = new Registers(all_regs, time_poll, mongo);
 }
 
 function run_send_data_interval() {
-
+    let time_send = tcp.config.send_timeout;
+    send_interv = setInterval(async () => {
+        let values = await mongo.get_from_history();
+        tcp.send_data(values);
+        mongo.set_sended(values);
+    }, time_send)
 }
 
 // open modbus connection to a tcp line

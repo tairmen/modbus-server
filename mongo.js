@@ -15,7 +15,7 @@ module.exports = class Mongo {
         let me = this;
         me.db = db;
     }
-    update_devices(devices, callback = () => {}) {
+    update_devices(devices, callback = () => { }) {
         const collection = this.db.collection("device");
         collection.remove({}, (result) => {
             collection.insertMany(devices, { ordered: true }, (res) => {
@@ -23,19 +23,26 @@ module.exports = class Mongo {
             });
         });
     }
-    add_history(sensors_data, callback = () => {}) {
-        const collection = this.db.collection("device");
-        let data = [];
-        collection.insertMany(sensors_data, { ordered: true }, (result) => {
+    add_history(sensors_data, callback = () => { }) {
+        const collection = this.db.collection("history");
+        let data = { data: sensors_data, send_status: false };
+        collection.insertOne(data, { ordered: true }, (result) => {
             callback();
         });
     }
-    get_from_history(callback = () => {}) {
-        const collection = this.db.collection("device");
-        collection.find({ send_status: false }, { ordered: true }, (result) => {
-            console.log(result);
-            callback();
+    async get_from_history(callback = () => { }) {
+        const collection = this.db.collection("history");
+        const cursor = collection.find({ send_status: false });
+        const allValues = await cursor.toArray();
+        return allValues;
+    }
+    async set_sended(data, callback = () => { }) {
+        const collection = this.db.collection("history");
+        let filter = [];
+        data.forEach(element => {
+            filter.push({_id: element._id});
         });
+        await collection.updateMany({ $or: filter }, {$set: { send_status: true }}, { upsert: true });
     }
     loaded() {
         if (db) {

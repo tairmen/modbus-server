@@ -1,8 +1,10 @@
 // create an empty modbus client
+const { EWOULDBLOCK } = require("constants");
 let ModbusRTU = require("modbus-serial");
 
 module.exports = class Registers {
-    constructor(regs, time_poll) {
+    constructor(regs, time_poll, mongo) {
+        this.mongo = mongo;
         this.init(regs, time_poll);
     }
     init(regs, time_poll) {
@@ -43,14 +45,25 @@ module.exports = class Registers {
     }
     async read_registers() {
         let me = this;
+        let readed_data = {};
         for (let i = 0; i < me.regs.length; i++) {
             let reg = me.regs[i];
             let currMaster = me.modbusMasters[reg.master_index];
             console.log(reg.device_id, reg.id, reg.start, reg.len)
             currMaster.setID(reg.id);
             let res = await currMaster.readHoldingRegisters(reg.start, reg.len);
+            if (!readed_data[reg.device_id]) {
+                readed_data[reg.device_id] = [];
+            }
+            readed_data[reg.device_id].push({
+                key: reg.key,
+                reg_addr: reg.start,
+                data: res.data,
+                created_at: (new Date()).getTime(),
+            })
             console.log(res);
         }
+        me.mongo.add_history(readed_data);
     }
     read_reg(addr, len, callback = () => { }) {
         this.modbusMaster.readHoldingRegisters(addr, len)
@@ -59,7 +72,12 @@ module.exports = class Registers {
                 callback()
             })
     }
-    write_reg(addr, len) {
-        this.modbusMaster.writeRegisters(addr, len);
+    write_reg(ip, port, mb_id, addr, val) {
+        let me = this;
+        let reg = me.regs.find(el => {
+            return el.ip == ip && el.port == port && el.id == mb_id;
+        })
+        let currMaster = me.modbusMasters[reg.master_index];
+        currMaster.writeRegisters(addr, [val]);
     }
 }

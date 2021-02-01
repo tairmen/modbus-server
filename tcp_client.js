@@ -11,6 +11,7 @@ module.exports = class TcpClient {
         me.mongo = mongo;
         me.client = new net.Socket();
         me.config = null;
+        me.config_recieved = false;
     }
     connect(callback = () => {}) {
         let me = this;
@@ -33,6 +34,9 @@ module.exports = class TcpClient {
                         });
                         console.log(me.config);
                         me.mongo.update_devices(me.config.devices);
+                        me.config_recieved = true;
+                    } else if (json_data.set) {
+                        let device_id = json_data.set.device_id;
                     }
                 } catch (e) {
                     console.log(e)
@@ -81,7 +85,8 @@ module.exports = class TcpClient {
         this.client.destroy();
     }
     config_enable() {
-        if (this.config) {
+        if (this.config_recieved) {
+            this.config_recieved = false;
             return true;
         } else {
             return false;
