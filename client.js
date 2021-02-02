@@ -27,6 +27,7 @@ function run() {
         if (tcp.config_enable()) {
             run_get_data_interval();
             run_send_data_interval();
+            listen_set_data();
         }
     }, 200)
 }
@@ -55,9 +56,32 @@ function run_send_data_interval() {
     let time_send = tcp.config.send_timeout;
     send_interv = setInterval(async () => {
         let values = await mongo.get_from_history();
+        let ids = [];
+        values.forEach(el => {
+            ids.push(el._id);
+        })
         tcp.send_data(values);
-        mongo.set_sended(values);
+        mongo.set_sended(ids);
     }, time_send)
+}
+
+function listen_set_data() {
+    let set_data_interv = setInterval(async () => {
+        if (mongo.set_enable()) {
+            let values = await mongo.get_history_set();
+            for (let i = 0; i < values.length; i++) {
+                let data = values[i].data;
+                console.log("changed registry", data.device_id, data.input, data.value);
+                registers.write_reg(data.device_id, data.input, data.value);
+            }
+            let ids = [];
+            values.forEach(el => {
+                ids.push(el._id);
+            })
+            tcp.send_ok("registry has been set");
+            mongo.set_history_set(ids);
+        }
+    }, 500)
 }
 
 // open modbus connection to a tcp line

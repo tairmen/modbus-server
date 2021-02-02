@@ -9,6 +9,7 @@ client.connect((err) => {
     console.log("Connected successfully to mongo");
     db = client.db(dbName);
 })
+let set_data = 0;
 
 module.exports = class Mongo {
     constructor() {
@@ -39,14 +40,44 @@ module.exports = class Mongo {
     async set_sended(data, callback = () => { }) {
         const collection = this.db.collection("history");
         let filter = [];
-        data.forEach(element => {
-            filter.push({_id: element._id});
+        data.forEach(id => {
+            filter.push({_id: id});
         });
         await collection.updateMany({ $or: filter }, {$set: { send_status: true }}, { upsert: true });
+    }
+    add_history_set(data, callback = () => { }) {
+        const collection = this.db.collection("history_set");
+        let ins_data = { data: data, status: false, recieved_at: (new Date()).getTime() };
+        collection.insertOne(ins_data, { ordered: true }, (result) => {
+            callback();
+            set_data += 1;
+        });
+    }
+    async get_history_set(callback = () => { }) {
+        const collection = this.db.collection("history_set");
+        const cursor = collection.find({ status: false });
+        const allValues = await cursor.toArray();
+        return allValues;
+    }
+    async set_history_set(data, callback = () => { }) {
+        const collection = this.db.collection("history_set");
+        let filter = [];
+        data.forEach(id => {
+            filter.push({_id: id});
+        });
+        await collection.updateMany({ $or: filter }, {$set: { status: true }}, { upsert: true });
     }
     loaded() {
         if (db) {
             this.db = db;
+            return true;
+        } else {
+            return false;
+        }
+    }
+    set_enable() {
+        if (set_data > 0) {
+            set_data = 0;
             return true;
         } else {
             return false;

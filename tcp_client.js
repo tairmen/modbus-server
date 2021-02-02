@@ -32,11 +32,19 @@ module.exports = class TcpClient {
                                 dev.register = data;
                             }
                         });
-                        console.log(me.config);
+                        console.log("Hub config", me.config.name, "recieved");
                         me.mongo.update_devices(me.config.devices);
                         me.config_recieved = true;
                     } else if (json_data.set) {
                         let device_id = json_data.set.device_id;
+                        let input = json_data.set.input;
+                        let value = json_data.set.value;
+                        console.log("Set data:", device_id, input, value, "recieved");
+                        me.mongo.add_history_set({
+                            device_id: device_id,
+                            input: input,
+                            value: value,
+                        });
                     }
                 } catch (e) {
                     console.log(e)
@@ -61,6 +69,7 @@ module.exports = class TcpClient {
         }
         let str_send_data = JSON.stringify(send_data);
         this.send(str_send_data);
+        console.log("Auth sended");
     }
     send_request(name) {
         let send_data = {
@@ -69,6 +78,7 @@ module.exports = class TcpClient {
         }
         let str_send_data = JSON.stringify(send_data);
         this.send(str_send_data);
+        console.log("Config request sended");
     }
     send_data(data) {
         let send_data = {
@@ -77,6 +87,17 @@ module.exports = class TcpClient {
         }
         let str_send_data = JSON.stringify(send_data);
         this.send(str_send_data);
+        console.log("Data sended");
+    }
+    send_ok(message) {
+        let send_data = {
+            token: this.token,
+            status: "ok",
+            message: message
+        }
+        let str_send_data = JSON.stringify(send_data);
+        this.send(str_send_data);
+        console.log("Ok sended");
     }
     getAddr() {
         return this.address;

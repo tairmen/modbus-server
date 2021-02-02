@@ -49,7 +49,7 @@ module.exports = class Registers {
         for (let i = 0; i < me.regs.length; i++) {
             let reg = me.regs[i];
             let currMaster = me.modbusMasters[reg.master_index];
-            console.log(reg.device_id, reg.id, reg.start, reg.len)
+            // console.log(reg.device_id, reg.id, reg.start, reg.len)
             currMaster.setID(reg.id);
             let res = await currMaster.readHoldingRegisters(reg.start, reg.len);
             if (!readed_data[reg.device_id]) {
@@ -61,9 +61,10 @@ module.exports = class Registers {
                 data: res.data,
                 created_at: (new Date()).getTime(),
             })
-            console.log(res);
+            // console.log(res);
         }
         me.mongo.add_history(readed_data);
+        console.log("History added");
     }
     read_reg(addr, len, callback = () => { }) {
         this.modbusMaster.readHoldingRegisters(addr, len)
@@ -72,12 +73,13 @@ module.exports = class Registers {
                 callback()
             })
     }
-    write_reg(ip, port, mb_id, addr, val) {
+    write_reg(device_id, key, val) {
         let me = this;
         let reg = me.regs.find(el => {
-            return el.ip == ip && el.port == port && el.id == mb_id;
+            return el.device_id == device_id && el.key == key;
         })
         let currMaster = me.modbusMasters[reg.master_index];
-        currMaster.writeRegisters(addr, [val]);
+        currMaster.setID(reg.id);
+        currMaster.writeRegisters(reg.start, [val]);
     }
 }
