@@ -20,6 +20,7 @@ module.exports = class TcpClient {
             callback(me.address);
             me.client.on('data', function (data) {
                 try {
+                    console.log(data.toString())
                     let json_data = JSON.parse(data);
                     if (json_data.token) {
                         me.token = json_data.token;

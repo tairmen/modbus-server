@@ -9,7 +9,7 @@ let mongo = new MongoClient();
 
 let tcp = new TcpClient(mongo);
 
-let registers, send_interv;
+let registers, send_interv, set_data_interv;
 
 let conncted_to_db = setInterval(() => {
     if (mongo.loaded()) {
@@ -25,6 +25,16 @@ let conncted_to_db = setInterval(() => {
 function run() {
     setInterval(() => {
         if (tcp.config_enable()) {
+            if (registers) {
+                clearInterval(registers.interv);
+                registers = null;
+            }
+            if (send_interv) {
+                clearInterval(send_interv);
+            }
+            if (set_data_interv) {
+                clearInterval(set_data_interv);
+            }
             run_get_data_interval();
             run_send_data_interval();
             listen_set_data();
@@ -66,7 +76,7 @@ function run_send_data_interval() {
 }
 
 function listen_set_data() {
-    let set_data_interv = setInterval(async () => {
+    set_data_interv = setInterval(async () => {
         if (mongo.set_enable()) {
             let values = await mongo.get_history_set();
             for (let i = 0; i < values.length; i++) {
