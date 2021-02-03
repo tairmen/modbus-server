@@ -58,7 +58,7 @@ module.exports = class Registers {
             readed_data[reg.device_id].push({
                 key: reg.key,
                 reg_addr: reg.start,
-                data: res.data,
+                data: res.data[0],
                 created_at: (new Date()).getTime(),
             })
             // console.log(res);

@@ -54,8 +54,8 @@ function run_get_data_interval() {
                 port: dev.port,
                 id: dev.mb_id,
                 key: key,
-                start: dev.register[key].start,
-                len: dev.register[key].len
+                start: dev.register[key],
+                len: 1
             })
         }
     })
