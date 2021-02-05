@@ -39,7 +39,7 @@ module.exports = class Registers {
         me.interv = setInterval(async () => {
             await me.read_registers()
                 .catch((error) => {
-                    console.error(error)
+                    // console.log("Read registers error")
                 });
         }, me.time_poll);
     }
@@ -51,7 +51,9 @@ module.exports = class Registers {
             let currMaster = me.modbusMasters[reg.master_index];
             // console.log(reg.device_id, reg.id, reg.start, reg.len)
             currMaster.setID(reg.id);
-            let res = await currMaster.readHoldingRegisters(reg.start, reg.len);
+            let res = await currMaster.readHoldingRegisters(reg.start, reg.len).catch((er) => {
+                console.log("ERROR: Read register: device_id", reg.device_id, ", id:", reg.id, ", addr:", reg.start);
+            });
             if (!readed_data[reg.device_id]) {
                 readed_data[reg.device_id] = [];
             }

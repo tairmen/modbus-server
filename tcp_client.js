@@ -15,48 +15,59 @@ module.exports = class TcpClient {
     }
     connect(callback = () => {}) {
         let me = this;
-        me.client.connect(port, host, function () {
-            me.address = me.client.address().address + ":" + me.client.address().port;
-            callback(me.address);
-            me.client.on('data', function (data) {
-                try {
-                    console.log(data.toString())
-                    let json_data = JSON.parse(data);
-                    if (json_data.token) {
-                        me.token = json_data.token;
-                        me.send_request("config");
-                    } else if (json_data.config) {
-                        me.config = json_data.config;
-                        me.config.devices.forEach(dev => {
-                            if (typeof dev.register == "string") {
-                                let data = JSON.parse(dev.register);
-                                dev.register = data;
-                            }
-                        });
-                        console.log("Hub config", me.config.name, "recieved");
-                        me.mongo.update_devices(me.config.devices);
-                        me.config_recieved = true;
-                    } else if (json_data.set) {
-                        let device_id = json_data.set.device_id;
-                        let input = json_data.set.input;
-                        let value = json_data.set.value;
-                        console.log("Set data:", device_id, input, value, "recieved");
-                        me.mongo.add_history_set({
-                            device_id: device_id,
-                            input: input,
-                            value: value,
-                        });
+        function f() { 
+            me.client.connect(port, host, function () {
+                me.address = me.client.address().address + ":" + me.client.address().port;
+                callback(me.address);
+                me.client.on('data', function (data) {
+                    try {
+                        console.log(data.toString())
+                        let json_data = JSON.parse(data);
+                        if (json_data.token) {
+                            me.token = json_data.token;
+                            me.send_request("config");
+                        } else if (json_data.config) {
+                            me.config = json_data.config;
+                            me.config.devices.forEach(dev => {
+                                if (typeof dev.register == "string") {
+                                    let data = JSON.parse(dev.register);
+                                    dev.register = data;
+                                }
+                            });
+                            console.log("Hub config", me.config.name, "recieved");
+                            me.mongo.update_devices(me.config.devices);
+                            me.config_recieved = true;
+                        } else if (json_data.set) {
+                            let device_id = json_data.set.device_id;
+                            let input = json_data.set.input;
+                            let value = json_data.set.value;
+                            console.log("Set data:", device_id, input, value, "recieved");
+                            me.mongo.add_history_set({
+                                device_id: device_id,
+                                input: input,
+                                value: value,
+                            });
+                        }
+                    } catch (e) {
+                        console.log(e)
                     }
-                } catch (e) {
-                    console.log(e)
-                }
 
 
+                });
+                me.client.on('close', function () {
+                    console.log("Disconnected: ", me.address);
+                });
             });
-            me.client.on('close', function () {
-                console.log("Disconnected: ", me.address);
+            me.client.on('error', function(ex) {
+                console.log("handled connection error to node server");
+                me.client = new net.Socket();
+                setTimeout(() => {
+                    f();
+                }, 10000)
             });
-        });
+        }
+        f();
+        
     }
     send(data) {
         this.client.write(data);
