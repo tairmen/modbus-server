@@ -10,6 +10,7 @@ module.exports = class TcpClient {
         let me = this;
         me.mongo = mongo;
         me.client = new net.Socket();
+        me.connected = false;
         me.config = null;
         me.config_recieved = false;
     }
@@ -17,6 +18,7 @@ module.exports = class TcpClient {
         let me = this;
         function f() { 
             me.client.connect(port, host, function () {
+                me.connected = true;
                 me.address = me.client.address().address + ":" + me.client.address().port;
                 callback(me.address);
                 me.client.on('data', function (data) {
@@ -55,10 +57,12 @@ module.exports = class TcpClient {
 
                 });
                 me.client.on('close', function () {
+                    me.connected = false;
                     console.log("Disconnected: ", me.address);
                 });
             });
             me.client.on('error', function(ex) {
+                me.connected = false;
                 console.log("handled connection error to node server");
                 me.client = new net.Socket();
                 setTimeout(() => {
@@ -70,7 +74,17 @@ module.exports = class TcpClient {
         
     }
     send(data) {
-        this.client.write(data);
+        try {
+            if (this.connected) {
+                this.client.write(data);
+            } else {
+                console.log("Not Connected to Server");
+            }
+            
+        } catch(e) {
+            console.log("Send Error");
+        }
+        
     }
     send_auth() {
         let send_data = {
