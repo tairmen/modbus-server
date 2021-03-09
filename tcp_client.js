@@ -27,7 +27,7 @@ module.exports = class TcpClient {
                         let json_data = JSON.parse(data);
                         if (json_data.token) {
                             me.token = json_data.token;
-                            me.send_request("config");
+                            me.send_request("ConfigRequest");
                         } else if (json_data.config) {
                             me.config = json_data.config;
                             me.config.devices.forEach(dev => {
@@ -99,7 +99,7 @@ module.exports = class TcpClient {
     }
     send_request(name) {
         let send_data = {
-            request: name,
+            action: name,
             token: this.token,
         }
         let str_send_data = JSON.stringify(send_data);
@@ -108,6 +108,7 @@ module.exports = class TcpClient {
     }
     send_data(data) {
         let send_data = {
+            action: "sendData",
             token: this.token,
             data: data,
         }
